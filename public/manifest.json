@@ -10,13 +10,14 @@
     "48": "icons/dropout-48.png",
     "96": "icons/dropout-96.png"
   },
-
+  "host_permissions": [
+    "https://www.dropout.tv/*"
+  ],
   "content_scripts": [
     {
       "matches": ["https://www.dropout.tv/*"],
       "js": ["js/dropout.js"],
-      "run_at": "document_end",
-      "world": "MAIN"
+      "run_at": "document_end"
     }
   ],
   "browser_specific_settings": {

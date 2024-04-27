@@ -1,6 +1,7 @@
 import WaitingMethod from "./WaitingMethod.js";
 import SubtitleInfo from "./SubtitleInfo.js";
 import PlayerEvent from "./PlayerEvent.js";
+import EventTarget from "../Events/EventTarget.js";
 
 /**
  * Vimeo OTT player API
