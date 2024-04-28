@@ -1,0 +1,36 @@
+html {
+    background-color: #222222;
+    color: #fff;
+    font-family: "Noto Sans", Arial, sans-serif;
+}
+
+.heading {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    margin-left: 6px;
+    margin-right: 6px;
+}
+
+.heading img {
+    height: 2em;
+}
+
+p {
+    font-size: 14px;
+    margin-left: 12px;
+    margin-right: 12px;
+}
+
+p .ul {
+    text-decoration: underline;
+}
+
+.status-missing-permission {
+    display: none;
+    cursor: pointer;
+}
+
+.status-error {
+    display: none;
+}
