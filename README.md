@@ -12,7 +12,9 @@ I might look into a way of doing this in the future.
 
 ## Installation
 
-Chrome web store: https://chromewebstore.google.com/detail/dropouthelper/jpdeijennnlahlhcoihhenodnolgdapl
+Chrome: https://chromewebstore.google.com/detail/dropouthelper/jpdeijennnlahlhcoihhenodnolgdapl
+
+Firefox: https://addons.mozilla.org/en-US/firefox/addon/dropouthelper/
 
 ## Manual Installation on chrome
 1. Download the latest release from the releases page
