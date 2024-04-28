@@ -1,9 +1,8 @@
-
-let env;
-if (typeof browser !== 'undefined') {
-    env = browser;
-} else if (typeof chrome !== 'undefined') {
+/** @type {typeof chrome} */ let env;
+if (typeof chrome !== 'undefined') {
     env = chrome;
+} else if (typeof browser !== 'undefined') {
+    env = browser;
 } else {
     env = null;
 }
@@ -16,7 +15,7 @@ statusMissingPermission.addEventListener('click', requestPermissions);
 
 const requiredPermissions = {origins: ["https://www.dropout.tv/*"]};
 
-async function update () {
+async function update() {
     if (env === null) {
         statusOk.style.display = 'none';
         statusError.style.display = 'block';
@@ -24,7 +23,7 @@ async function update () {
         return;
     }
 
-    if (await chrome.permissions.contains(requiredPermissions)) {
+    if (await env.permissions.contains(requiredPermissions)) {
         statusOk.style.display = 'block';
         statusError.style.display = 'none';
         statusMissingPermission.style.display = 'none';
@@ -36,7 +35,7 @@ async function update () {
     statusMissingPermission.style.display = 'block';
 }
 
-async function requestPermissions () {
+async function requestPermissions() {
     await env.permissions.request(requiredPermissions);
     await update();
 }
