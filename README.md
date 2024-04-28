@@ -11,7 +11,8 @@ This is because the Vimeo OTT API doesn't provide a way to get or set the style 
 I might look into a way of doing this in the future.
 
 ## Installation
-//Links to addon stores once available
+
+Chrome web store: https://chromewebstore.google.com/detail/dropouthelper/jpdeijennnlahlhcoihhenodnolgdapl
 
 ## Manual Installation on chrome
 1. Download the latest release from the releases page
