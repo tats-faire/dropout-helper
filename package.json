@@ -1,7 +1,7 @@
 {
   "name": "dropout-addon",
   "version": "1.0.0",
-  "description": "",
+  "description": "Dropout but it saves your volume and subtitle settings",
   "type": "module",
   "main": "index.js",
   "scripts": {
@@ -12,7 +12,7 @@
   },
   "keywords": [],
   "author": "",
-  "license": "ISC",
+  "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.0.266",
     "esbuild": "^0.20.2",
