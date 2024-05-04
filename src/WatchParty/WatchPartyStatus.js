@@ -7,6 +7,7 @@ export default class WatchPartyStatus {
     /** @type {number} */ createdAt = Date.now();
     /** @type {number} */ speed = 1;
     /** @type {boolean} */ playing = true;
+    /** @type {?Object} */ stats = null;
 
     getTime() {
         let time = this.time;

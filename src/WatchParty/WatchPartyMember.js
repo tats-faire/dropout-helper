@@ -1,6 +1,8 @@
 import Socket from "../Socket/Socket.js";
+import EventTarget from "../Events/EventTarget.js";
+import Event from "../Events/Event.js";
 
-export default class WatchPartyMember {
+export default class WatchPartyMember extends EventTarget {
     /** @type {string} */ id;
     /** @type {import("../Socket/Socket.js").default} */ socket;
     /** @type {Player} */ player;
@@ -16,6 +18,7 @@ export default class WatchPartyMember {
      * @param {Player} player
      */
     constructor(id, player) {
+        super();
         this.id = id;
         this.player = player;
         this.socket = new Socket();
@@ -36,6 +39,7 @@ export default class WatchPartyMember {
             await this.socket.subscribe(this.id);
         } catch (e) {
             this.socket.close();
+            throw e;
         }
     }
 
@@ -46,6 +50,7 @@ export default class WatchPartyMember {
     async handleSocketStatus(event) {
         this.lastStatus = event.getStatus();
         await this.applyStatus();
+        this.dispatchEvent(new Event('update'));
     }
 
     /**

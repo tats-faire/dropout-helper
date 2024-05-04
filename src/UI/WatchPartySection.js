@@ -6,11 +6,13 @@ export default class WatchPartySection {
     /** @type {boolean} */ busy = false;
     /** @type {HTMLElement} */ main;
     /** @type {HTMLElement} */ message;
+    /** @type {HTMLElement} */ errorMessage;
     /** @type {HTMLButtonElement} */ createButton;
     /** @type {HTMLButtonElement} */ leaveButton;
     /** @type {HTMLButtonElement} */ copyLinkButton;
     /** @type {?WatchPartyMember} */ member = null;
     /** @type {?WatchPartyHost} */ host = null;
+    /** @type {?number} */ errorTimeout = null;
 
     /**
      * @param {Player} player
@@ -18,13 +20,15 @@ export default class WatchPartySection {
     constructor(player) {
         this.player = player;
         this.create();
+        this.updateUI();
     }
 
-    updateButtons() {
+    updateUI() {
         let inParty = this.member !== null || this.host !== null;
         this.createButton.style.display = inParty ? 'none' : '';
         this.leaveButton.style.display = inParty ? '' : 'none';
         this.copyLinkButton.style.display = inParty ? '' : 'none';
+        this.updateMessage();
     }
 
     create() {
@@ -43,7 +47,6 @@ export default class WatchPartySection {
         this.message = document.createElement('p');
         this.message.classList.add('site-font-secondary-color');
         this.message.textContent = '';
-        this.message.style.display = 'none';
         content.appendChild(this.message);
 
         this.createButton = this.createButtonElement('Create Watch Party', this.handleCreateButton.bind(this));
@@ -56,6 +59,40 @@ export default class WatchPartySection {
         this.copyLinkButton = this.createButtonElement('Copy Link', this.handleCopyLinkButton.bind(this));
         this.copyLinkButton.style.display = 'none';
         content.appendChild(this.copyLinkButton);
+
+        this.errorMessage = document.createElement('p');
+        this.errorMessage.textContent = '';
+        this.errorMessage.style.color = '#D3104AFF';
+        this.errorMessage.style.display = 'none';
+        content.appendChild(this.errorMessage);
+    }
+
+    updateMessage() {
+        if (!this.member && !this.host) {
+            this.message.textContent = 'Create or join a watch party to watch videos with friends!';
+            return;
+        }
+
+        if (this.member) {
+            let count = this.member.lastStatus?.stats?.viewers ?? 0;
+            this.message.textContent = `Watching with ${Math.max(0, count - 1)} others`;
+            return;
+        }
+
+        let count = this.host.lastStatus?.stats?.viewers ?? 0;
+        this.message.textContent = `Hosting for ${Math.max(0, count - 1)} viewers`;
+    }
+
+    /**
+     * @param message
+     */
+    showError(message) {
+        clearTimeout(this.errorTimeout);
+        this.errorMessage.textContent = message;
+        this.errorMessage.style.display = '';
+        this.errorTimeout = setTimeout(() => {
+            this.errorMessage.style.display = 'none';
+        }, 10000);
     }
 
     /**
@@ -68,15 +105,15 @@ export default class WatchPartySection {
         }
         this.busy = true;
         this.member = new WatchPartyMember(id, this.player);
+        this.member.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.member.init();
         } catch (e) {
             console.error('Failed to join watch party', e);
-            this.message.textContent = 'Failed to join watch party. The party may no longer exist or your link may be invalid.';
-            this.message.style.display = '';
+            this.showError('Failed to join watch party. The party may no longer exist or your link may be invalid.');
             this.member = null;
         }
-        this.updateButtons();
+        this.updateUI();
         this.busy = false;
     }
 
@@ -103,16 +140,16 @@ export default class WatchPartySection {
         }
         this.busy = true;
         this.host = new WatchPartyHost(this.player);
+        this.host.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.host.init();
             self.location.hash = '#dhparty-' + this.host.id;
         } catch (e) {
             console.error('Failed to create watch party', e);
-            this.message.textContent = 'Failed to create watch party';
-            this.message.style.display = '';
+            this.showError('Failed to create watch party');
             this.host = null;
         }
-        this.updateButtons();
+        this.updateUI();
         this.busy = false;
     }
 
@@ -131,13 +168,12 @@ export default class WatchPartySection {
             this.host = null;
         } catch (e) {
             console.error('Failed to leave watch party', e);
-            this.message.textContent = 'Failed to leave watch party';
-            this.message.style.display = '';
+            this.showError('Failed to leave watch party');
         }
         if (self.location.hash.startsWith('#dhparty-')) {
             self.location.hash = '';
         }
-        this.updateButtons();
+        this.updateUI();
         this.busy = false;
     }
 

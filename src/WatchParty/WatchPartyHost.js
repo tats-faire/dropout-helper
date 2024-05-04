@@ -1,12 +1,15 @@
 import Socket from "../Socket/Socket.js";
 import WatchPartyStatus from "./WatchPartyStatus.js";
+import EventTarget from "../Events/EventTarget.js";
+import Event from "../Events/Event.js";
 
-export default class WatchPartyHost {
+export default class WatchPartyHost extends EventTarget {
     /** @type {string} */ id;
     /** @type {string} */ secret;
     /** @type {import("../Socket/Socket.js").default} */ socket;
     /** @type {Player} */ player;
     /** @type {number} */ updateInterval;
+    /** @type {?WatchPartyStatus} */ lastStatus = null;
     /** @type {Function} */ _publishUpdate;
 
     /**
@@ -15,10 +18,14 @@ export default class WatchPartyHost {
      * @param {?string} secret
      */
     constructor(player, id = null, secret = null) {
+        super();
         this.id = id;
         this.secret = secret;
         this.player = player;
         this.socket = new Socket();
+
+        this.socket.addEventListener('status', this.handleSocketStatus.bind(this));
+        this.socket.addEventListener('reconnect', this.handleReconnect.bind(this));
 
         this._publishUpdate = this.publishUpdate.bind(this);
         this.player.addEventListener('seeked', this._publishUpdate);
@@ -30,16 +37,38 @@ export default class WatchPartyHost {
      * @returns {Promise<void>}
      */
     async init() {
-        await this.socket.connect();
         let status = await this.collectStatusInfo();
-        if (this.id === null || this.secret === null) {
-            let result = await this.socket.create(status);
-            this.id = result.id;
-            this.secret = result.secret;
-        } else {
-            await this.socket.update(status);
+        await this.socket.connect();
+        try {
+            if (this.id === null || this.secret === null) {
+                let result = await this.socket.create(status);
+                this.id = result.id;
+                this.secret = result.secret;
+            } else {
+                await this.socket.update(status);
+            }
+            await this.socket.subscribe(this.id);
+        } catch (e) {
+            this.socket.close();
+            throw e;
         }
         this.updateInterval = setInterval(this._publishUpdate, 5000);
+    }
+
+    /**
+     * @param {SocketStatusEvent} event
+     * @returns {Promise<void>}
+     */
+    async handleSocketStatus(event) {
+        this.lastStatus = event.getStatus();
+        this.dispatchEvent(new Event('update'));
+    }
+
+    /**
+     * @returns {Promise<void>}
+     */
+    async handleReconnect() {
+        await this.socket.subscribe(this.id);
     }
 
     /**
