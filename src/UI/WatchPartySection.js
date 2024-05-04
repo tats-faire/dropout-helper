@@ -105,6 +105,7 @@ export default class WatchPartySection {
         this.host = new WatchPartyHost(this.player);
         try {
             await this.host.init();
+            self.location.hash = '#dhparty-' + this.host.id;
         } catch (e) {
             console.error('Failed to create watch party', e);
             this.message.textContent = 'Failed to create watch party';
@@ -132,6 +133,9 @@ export default class WatchPartySection {
             console.error('Failed to leave watch party', e);
             this.message.textContent = 'Failed to leave watch party';
             this.message.style.display = '';
+        }
+        if (self.location.hash.startsWith('#dhparty-')) {
+            self.location.hash = '';
         }
         this.updateButtons();
         this.busy = false;
