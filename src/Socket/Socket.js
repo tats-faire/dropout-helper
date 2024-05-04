@@ -5,6 +5,7 @@ import EventTarget from "../Events/EventTarget.js";
 import SocketMessageEvent from "../Events/SocketMessageEvent.js";
 import SocketStatusEvent from "../Events/SocketStatusEvent.js";
 import WatchPartyStatus from "../WatchParty/WatchPartyStatus.js";
+import Event from "../Events/Event.js";
 
 export default class Socket extends EventTarget {
     /** @type {WebSocket} */ ws;
@@ -16,7 +17,7 @@ export default class Socket extends EventTarget {
     /**
      * @returns {Promise<this>}
      */
-    async connect() {
+    async connect(reconnect = false) {
         this.reconnect = true;
         while (this.reconnect) {
             try {
@@ -26,15 +27,29 @@ export default class Socket extends EventTarget {
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
         }
+        if (!this.reconnect) {
+            this.ws.close();
+            return this;
+        }
 
         this.ws.addEventListener('error', () => {
             this.ws.close();
         });
         this.ws.addEventListener('close', () => {
             this.stopPinging();
-            setTimeout(() => this.connect(), 2000);
+            for (let pending of this.pendingRequests.values()) {
+                pending.reject(new Error('Connection closed'));
+            }
+            this.pendingRequests.clear();
+            setTimeout(() => this.connect(true), 2000);
         });
         this.ws.addEventListener('message', this.handleMessage.bind(this));
+
+        this.dispatchEvent(new Event('connect'));
+        if (reconnect) {
+            this.dispatchEvent(new Event('reconnect'));
+        }
+
         this.startPinging();
         return this;
     }
@@ -61,7 +76,10 @@ export default class Socket extends EventTarget {
      */
     close() {
         this.reconnect = false;
-        this.ws.close();
+        try {
+            this.ws.close();
+        } catch (e) {
+        }
         return this;
     }
 

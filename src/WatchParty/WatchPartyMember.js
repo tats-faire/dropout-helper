@@ -20,6 +20,7 @@ export default class WatchPartyMember {
         this.player = player;
         this.socket = new Socket();
         this.socket.addEventListener('status', this.handleSocketStatus.bind(this));
+        this.socket.addEventListener('reconnect', this.handleReconnect.bind(this));
 
         this._applyScheduledUpdate = this.applyScheduledUpdate.bind(this);
         this._applyStatus = this.applyStatus.bind(this);
@@ -45,6 +46,13 @@ export default class WatchPartyMember {
     async handleSocketStatus(event) {
         this.lastStatus = event.getStatus();
         await this.applyStatus();
+    }
+
+    /**
+     * @returns {Promise<void>}
+     */
+    async handleReconnect() {
+        await this.socket.subscribe(this.id);
     }
 
     /**
