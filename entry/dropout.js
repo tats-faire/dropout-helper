@@ -1,7 +1,5 @@
 import Storage from "../src/Storage.js";
 import Player from "../src/Player/Player.js";
-import WatchPartyMember from "../src/WatchParty/WatchPartyMember.js";
-import WatchPartyHost from "../src/WatchParty/WatchPartyHost.js";
 import WatchPartySection from "../src/UI/WatchPartySection.js";
 
 
@@ -16,7 +14,7 @@ import WatchPartySection from "../src/UI/WatchPartySection.js";
 
     let shareTools = document.querySelector('div.share-tools');
     let column = shareTools.parentElement;
-    let watchPartySection = new WatchPartySection(player);
+    let watchPartySection = new WatchPartySection(player, storage);
     column.insertBefore(watchPartySection.getHtml(), shareTools);
 
     // The volumechange even is emitted whenever the volume is changed or the player is muted/unmuted
@@ -28,7 +26,8 @@ import WatchPartySection from "../src/UI/WatchPartySection.js";
             return;
         }
 
-        storage.set({volume: e.getData().volume, muted: await player.isMuted()});
+        storage.set('volume', e.getData().volume);
+        storage.set('muted', await player.isMuted());
     });
 
     player.addEventListener('loadstart', async e => {
@@ -58,7 +57,7 @@ import WatchPartySection from "../src/UI/WatchPartySection.js";
         if (storage.get('subtitles') === id) {
             return;
         }
-        storage.set({subtitles: id});
+        storage.set('subtitles', id);
     }, 1000);
 })();
 

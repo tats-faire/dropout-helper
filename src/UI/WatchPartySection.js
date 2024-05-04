@@ -3,6 +3,7 @@ import WatchPartyMember from "../WatchParty/WatchPartyMember.js";
 
 export default class WatchPartySection {
     /** @type {Player} */ player;
+    /** @type {import("../Storage.js").default} */ storage;
     /** @type {boolean} */ busy = false;
     /** @type {HTMLElement} */ main;
     /** @type {HTMLElement} */ message;
@@ -10,15 +11,19 @@ export default class WatchPartySection {
     /** @type {HTMLButtonElement} */ createButton;
     /** @type {HTMLButtonElement} */ leaveButton;
     /** @type {HTMLButtonElement} */ copyLinkButton;
+    /** @type {HTMLButtonElement} */ becomeHostButton;
     /** @type {?WatchPartyMember} */ member = null;
     /** @type {?WatchPartyHost} */ host = null;
     /** @type {?number} */ errorTimeout = null;
 
     /**
      * @param {Player} player
+     * @param {import("../Storage.js").default} storage
      */
-    constructor(player) {
+    constructor(player, storage) {
         this.player = player;
+        this.storage = storage;
+        this.updateStoredSecrets();
         this.create();
         this.updateUI();
     }
@@ -28,6 +33,7 @@ export default class WatchPartySection {
         this.createButton.style.display = inParty ? 'none' : '';
         this.leaveButton.style.display = inParty ? '' : 'none';
         this.copyLinkButton.style.display = inParty ? '' : 'none';
+        this.becomeHostButton.style.display = this.member?.id && this.getStoredSecret(this.member.id) ? '' : 'none';
         this.updateMessage();
     }
 
@@ -59,6 +65,10 @@ export default class WatchPartySection {
         this.copyLinkButton = this.createButtonElement('Copy Link', this.handleCopyLinkButton.bind(this));
         this.copyLinkButton.style.display = 'none';
         content.appendChild(this.copyLinkButton);
+
+        this.becomeHostButton = this.createButtonElement('Resume Hosting', this.handleBecomeHost.bind(this));
+        this.becomeHostButton.style.display = 'none';
+        content.appendChild(this.becomeHostButton);
 
         this.errorMessage = document.createElement('p');
         this.errorMessage.textContent = '';
@@ -104,6 +114,7 @@ export default class WatchPartySection {
             return;
         }
         this.busy = true;
+
         this.member = new WatchPartyMember(id, this.player);
         this.member.addEventListener('update', this.updateUI.bind(this));
         try {
@@ -115,6 +126,95 @@ export default class WatchPartySection {
         }
         this.updateUI();
         this.busy = false;
+    }
+
+    async handleBecomeHost() {
+        if (this.busy) {
+            return;
+        }
+        this.busy = true;
+
+        let id = this.member.id;
+        let secret = this.getStoredSecret(id);
+
+        if (!secret) {
+            this.showError('Failed to resume hosting watch party. The party may no longer exist or your link may be invalid.');
+            this.busy = false;
+            return;
+        }
+
+        try {
+            await this.member.destroy();
+            this.member = null;
+        } catch (e) {
+            console.error('Failed to leave watch party', e);
+            this.showError('Failed to resume hosting watch party: Failed to leave watch party.');
+            this.busy = false;
+            return;
+        }
+
+        this.host = new WatchPartyHost(this.player, id, secret);
+        this.host.addEventListener('update', this.updateUI.bind(this));
+        try {
+            await this.host.init();
+        } catch (e) {
+            console.error('Failed to resume hosting watch party', e);
+            this.showError('Failed to resume hosting watch party. The party may no longer exist or your link may be invalid.');
+            this.host = null;
+        }
+
+        this.busy = false;
+        this.updateUI();
+    }
+
+    /**
+     * @returns {this}
+     */
+    updateStoredSecrets() {
+        let secrets = this.storage.get('watchPartySecrets') ?? {};
+        console.log('Updating stored secrets', secrets);
+        for (let id of Object.keys(secrets)) {
+            console.log('Checking secret', id);
+            let secret = secrets[id];
+            if (typeof secret !== 'object') {
+                delete secrets[id];
+            }
+            if (typeof secret.expires !== 'number' || secret.expires < Date.now()) {
+                delete secrets[id];
+            }
+            if (typeof secret.secret !== 'string') {
+                delete secrets[id];
+            }
+        }
+        this.storage.set('watchPartySecrets', secrets);
+        return this;
+    }
+
+    /**
+     * @param {string} id
+     * @returns {string|null}
+     */
+    getStoredSecret(id) {
+        let secrets = this.storage.get('watchPartySecrets');
+        if (!secrets) {
+            return null;
+        }
+        return secrets[id]?.secret ?? null;
+    }
+
+    /**
+     * @param {string} id
+     * @param {string} secret
+     * @returns {this}
+     */
+    storeSecret(id, secret) {
+        let secrets = this.storage.get('watchPartySecrets') ?? {};
+        secrets[id] = {
+            secret,
+            expires: Date.now() + 1000 * 60 * 60 * 24
+        };
+        this.storage.set('watchPartySecrets', secrets);
+        return this;
     }
 
     /**
@@ -144,6 +244,7 @@ export default class WatchPartySection {
         try {
             await this.host.init();
             self.location.hash = '#dhparty-' + this.host.id;
+            this.storeSecret(this.host.id, this.host.secret);
         } catch (e) {
             console.error('Failed to create watch party', e);
             this.showError('Failed to create watch party');

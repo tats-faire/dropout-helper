@@ -7,23 +7,15 @@ export default class Storage {
      */
     constructor(name) {
         this.name = name;
-        this.data = {};
-        let existing = localStorage.getItem(name);
-        if (existing) {
-            try {
-                this.data = JSON.parse(existing);
-            } catch (e) {
-            }
-        }
     }
 
     /**
-     * @param {Object} data
+     * @param {string} key
+     * @param {*} value
      * @returns {this}
      */
-    set(data) {
-        Object.assign(this.data, data);
-        localStorage.setItem(this.name, JSON.stringify(this.data));
+    set(key, value) {
+        localStorage.setItem(this.name + '_' + key, JSON.stringify(value));
         return this;
     }
 
@@ -32,7 +24,7 @@ export default class Storage {
      * @returns {boolean}
      */
     has(key) {
-        return key in this.data;
+        return !!localStorage.getItem(this.name + '_' + key);
     }
 
     /**
@@ -40,6 +32,6 @@ export default class Storage {
      * @returns {*}
      */
     get(key) {
-        return this.data[key];
+        return JSON.parse(localStorage.getItem(this.name + '_' + key));
     }
 }
