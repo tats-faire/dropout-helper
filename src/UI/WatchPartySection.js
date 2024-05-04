@@ -172,9 +172,7 @@ export default class WatchPartySection {
      */
     updateStoredSecrets() {
         let secrets = this.storage.get('watchPartySecrets') ?? {};
-        console.log('Updating stored secrets', secrets);
         for (let id of Object.keys(secrets)) {
-            console.log('Checking secret', id);
             let secret = secrets[id];
             if (typeof secret !== 'object') {
                 delete secrets[id];
