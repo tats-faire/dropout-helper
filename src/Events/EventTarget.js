@@ -56,7 +56,11 @@ export default class EventTarget {
             if (eventListener.once) {
                 this.removeEventListener(event.type, eventListener.callback);
             }
-            eventListener.callback(event);
+            try {
+                eventListener.callback(event);
+            } catch (e) {
+                console.error('Error in event listener', e);
+            }
         }
     }
 }

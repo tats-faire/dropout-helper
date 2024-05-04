@@ -1,5 +1,8 @@
 import Storage from "../src/Storage.js";
 import Player from "../src/Player/Player.js";
+import WatchPartyMember from "../src/WatchParty/WatchPartyMember.js";
+import WatchPartyHost from "../src/WatchParty/WatchPartyHost.js";
+import WatchPartySection from "../src/UI/WatchPartySection.js";
 
 
 (async () => {
@@ -10,6 +13,11 @@ import Player from "../src/Player/Player.js";
     }
 
     let player = Player.get(iframe);
+
+    let shareTools = document.querySelector('div.share-tools');
+    let column = shareTools.parentElement;
+    let watchPartySection = new WatchPartySection(player);
+    column.insertBefore(watchPartySection.getHtml(), shareTools);
 
     // The volumechange even is emitted whenever the volume is changed or the player is muted/unmuted
     // It does, however, not include the muted state, so we have to check that separately
@@ -34,6 +42,11 @@ import Player from "../src/Player/Player.js";
 
         if (storage.has('subtitles')) {
             await player.setSubtitle(storage.get('subtitles'));
+        }
+
+        if (self.location.hash.startsWith('#dhparty-')) {
+            let id = self.location.hash.slice(9);
+            await watchPartySection.join(id);
         }
     });
 

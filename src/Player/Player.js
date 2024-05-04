@@ -1,4 +1,4 @@
-import WaitingMethod from "./WaitingMethod.js";
+import PendingRequest from "./PendingRequest.js";
 import SubtitleInfo from "./SubtitleInfo.js";
 import PlayerEvent from "./PlayerEvent.js";
 import EventTarget from "../Events/EventTarget.js";
@@ -11,7 +11,11 @@ export default class Player extends EventTarget {
     /** @type {WeakMap<Window, Player>} */ static players = new WeakMap();
 
     /** @type {Window} */ contentWindow;
-    /** @type {Map<string, WaitingMethod[]>} */ waitingMethods = new Map();
+    /** @type {Map<string, PendingRequest[]>} */ waitingMethods = new Map();
+    /** @type {boolean} */ loading = false;
+    /** @type {boolean} */ seeking = false;
+    /** @type {?number} */ averageSeekTime = null;
+    /** @type {?number} */ seekStartTime = null;
 
     /**
      * Get the player instance for a given player iframe
@@ -37,6 +41,60 @@ export default class Player extends EventTarget {
         super();
         this.contentWindow = contentWindow;
         self.addEventListener('message', this.handleMessage.bind(this));
+
+        this.addEventListener('seeking', this.handleSeekStart.bind(this));
+        this.addEventListener('seeked', this.handleSeekEnd.bind(this));
+        this.addEventListener('loadstart', () => this.loading = true);
+        this.addEventListener('loadeddata', () => this.loading = false);
+    }
+
+    /**
+     * @returns {this}
+     */
+    handleSeekStart() {
+        this.seekStartTime = Date.now();
+        this.seeking = true;
+        return this;
+    }
+
+    /**
+     * @returns {this}
+     */
+    handleSeekEnd() {
+        this.seeking = false;
+        if (this.seekStartTime === null) {
+            return this;
+        }
+
+        let time = Date.now() - this.seekStartTime;
+        this.seekStartTime = null;
+        if (this.averageSeekTime === null) {
+            this.averageSeekTime = time;
+        } else {
+            this.averageSeekTime = (this.averageSeekTime + time) / 2;
+        }
+        return this;
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    isSeeking() {
+        return this.seeking;
+    }
+
+    /**
+     * @returns {boolean}
+     */
+    isLoading() {
+        return this.loading;
+    }
+
+    /**
+     * @returns {number}
+     */
+    getAverageSeekTime() {
+        return this.averageSeekTime ?? 0;
     }
 
     /**
@@ -49,7 +107,7 @@ export default class Player extends EventTarget {
     callMethod(method, parameters = {}) {
         let waiting;
         let promise = new Promise((resolve, reject) => {
-            waiting = new WaitingMethod(resolve, reject);
+            waiting = new PendingRequest(resolve, reject);
         });
         if (!this.waitingMethods.has(method)) {
             this.waitingMethods.set(method, []);
@@ -267,7 +325,7 @@ export default class Player extends EventTarget {
      * @returns {this}
      */
     seekTime(time) {
-        this.sendMethod('seekTime', [time]);
+        this.sendMethod('seekToTime', [time]);
         return this;
     }
 }

@@ -1,4 +1,4 @@
-export default class WaitingMethod {
+export default class PendingRequest {
     /** @type {Function} */ resolve;
     /** @type {Function} */ reject;
     /** @type {number} */ startTime;
