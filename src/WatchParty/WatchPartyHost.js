@@ -58,7 +58,11 @@ export default class WatchPartyHost {
      * @returns {Promise<void>}
      */
     async publishUpdate() {
-        await this.socket.update(await this.collectStatusInfo());
+        try {
+            await this.socket.update(await this.collectStatusInfo());
+        } catch (e) {
+            console.error('Failed to publish update', e);
+        }
     }
 
     /**

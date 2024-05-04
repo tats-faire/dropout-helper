@@ -59,7 +59,11 @@ export default class WatchPartyMember {
      * @returns {Promise<void>}
      */
     async destroy() {
-        await this.socket.unsubscribe(this.id);
+        try {
+            await this.socket.unsubscribe(this.id);
+        } catch (e) {
+            console.error('Failed to unsubscribe from watch party', e);
+        }
         this.socket.close();
 
         this.player.removeEventListener('seeked', this._applyScheduledUpdate);
@@ -117,7 +121,7 @@ export default class WatchPartyMember {
         let threshold = Math.min(0.5 * this.seekScore, 3);
         if (Math.abs(diff) > threshold) {
             this.seekScore++;
-            await this.player.seekTime(targetTime + (this.player.getAverageSeekTime() / 1000));
+            await this.player.seekTime(targetTime + Math.min(this.player.getAverageSeekTime() / 1000, 4));
         } else {
             this.seekScore = Math.max(1, this.seekScore - 1);
         }

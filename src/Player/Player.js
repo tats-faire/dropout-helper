@@ -69,9 +69,9 @@ export default class Player extends EventTarget {
         let time = Date.now() - this.seekStartTime;
         this.seekStartTime = null;
         if (this.averageSeekTime === null) {
-            this.averageSeekTime = time;
+            this.averageSeekTime = Math.min(time, 2000)
         } else {
-            this.averageSeekTime = (this.averageSeekTime + time) / 2;
+            this.averageSeekTime = (this.averageSeekTime * 3 + time) / 4;
         }
         return this;
     }

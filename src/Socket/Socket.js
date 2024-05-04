@@ -18,12 +18,14 @@ export default class Socket extends EventTarget {
      * @returns {Promise<this>}
      */
     async connect(reconnect = false) {
+        console.log('Connecting to DropoutHelper server', server);
         this.reconnect = true;
         while (this.reconnect) {
             try {
                 this.ws = await this.createConnection();
                 break;
             } catch (e) {
+                console.error('Failed to connect to DropoutHelper server, retrying in 2 seconds...');
                 await new Promise(resolve => setTimeout(resolve, 2000));
             }
         }
@@ -31,6 +33,7 @@ export default class Socket extends EventTarget {
             this.ws.close();
             return this;
         }
+        console.log('Connected to DropoutHelper server');
 
         this.ws.addEventListener('error', () => {
             this.ws.close();
@@ -41,7 +44,11 @@ export default class Socket extends EventTarget {
                 pending.reject(new Error('Connection closed'));
             }
             this.pendingRequests.clear();
-            setTimeout(() => this.connect(true), 2000);
+
+            if (this.reconnect) {
+                console.error('Lost connection to DropoutHelper server, reconnecting in 2 seconds...');
+                setTimeout(() => this.connect(true), 2000);
+            }
         });
         this.ws.addEventListener('message', this.handleMessage.bind(this));
 
