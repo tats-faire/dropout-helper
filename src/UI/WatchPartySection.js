@@ -209,7 +209,7 @@ export default class WatchPartySection {
         let secrets = this.storage.get('watchPartySecrets') ?? {};
         secrets[id] = {
             secret,
-            expires: Date.now() + 1000 * 60 * 60 * 24
+            expires: Date.now() + 1000 * 60 * 60 * 24 * 7
         };
         this.storage.set('watchPartySecrets', secrets);
         return this;
