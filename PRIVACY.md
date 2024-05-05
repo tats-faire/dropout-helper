@@ -23,8 +23,8 @@ or method of electronic storage, is 100% secure. While we strive to use commerci
 Personal Information, we cannot guarantee its absolute security.
 
 ## Changes to this Privacy Policy
-We may update our Privacy Policy from time to time. We will notify you of any changes by posting the new Privacy Policy on this page.
-You are advised to review this Privacy Policy periodically for any changes. Changes to this Privacy Policy are effective when they are posted on this page.
+We may update our Privacy Policy from time to time. You are advised to review this Privacy Policy periodically for any changes. 
+Changes to this Privacy Policy are effective when they are posted on this page.
 
 ## Contact Us
 If you have any questions about this Privacy Policy, please contact us at
