@@ -164,9 +164,13 @@ export default class Socket extends EventTarget {
             waiting = new PendingRequest(resolve, reject);
         });
 
-        this.pendingRequests.set(message.getId(), waiting);
+        try {
+            this.send(message);
+            this.pendingRequests.set(message.getId(), waiting);
+        } catch (e) {
+            waiting.reject(e);
+        }
 
-        this.send(message);
         return promise;
     }
 
