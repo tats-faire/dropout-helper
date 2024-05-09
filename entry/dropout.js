@@ -31,6 +31,8 @@ import WatchPartySection from "../src/UI/WatchPartySection.js";
     });
 
     player.addEventListener('loadstart', async e => {
+        player.initExtension('playback-rate').catch(e => console.error('Failed to init playback rate extension', e));
+
         if (storage.has('volume')) {
             player.setVolume(storage.get('volume'));
         }

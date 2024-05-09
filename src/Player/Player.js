@@ -1,7 +1,8 @@
-import PendingRequest from "./PendingRequest.js";
+import PendingRequest from "../PendingRequest.js";
 import SubtitleInfo from "./SubtitleInfo.js";
 import PlayerEvent from "./PlayerEvent.js";
 import EventTarget from "../Events/EventTarget.js";
+import OttApiMessage from "./OttApiMessage.js";
 
 /**
  * Vimeo OTT player API
@@ -16,6 +17,7 @@ export default class Player extends EventTarget {
     /** @type {boolean} */ seeking = false;
     /** @type {?number} */ averageSeekTime = null;
     /** @type {?number} */ seekStartTime = null;
+    /** @type {Set<string>} */ extensions = new Set();
 
     /**
      * Get the player instance for a given player iframe
@@ -98,6 +100,14 @@ export default class Player extends EventTarget {
     }
 
     /**
+     * @param {string} extension
+     * @returns {boolean}
+     */
+    hasExtension(extension) {
+        return this.extensions.has(extension);
+    }
+
+    /**
      * Send a request to the player and wait for a response
      *
      * @param {string} method
@@ -124,7 +134,7 @@ export default class Player extends EventTarget {
      * @param {*} parameters
      */
     sendMethod(method, parameters = {}) {
-        this.contentWindow.postMessage(JSON.stringify({method, params: parameters}), '*');
+        this.contentWindow.postMessage(JSON.stringify(new OttApiMessage(method, parameters)), '*');
     }
 
     /**
@@ -151,22 +161,20 @@ export default class Player extends EventTarget {
         if (event.source !== this.contentWindow) {
             return;
         }
-        let data = event.data;
-        if (typeof data === 'string') {
-            try {
-                data = JSON.parse(data);
-            }catch (e) {
-                return;
-            }
-        }
-        if (typeof data !== 'object' || !data.method) {
+
+        let message = OttApiMessage.fromMessage(event);
+        if (message === null) {
             return;
         }
 
-        this.dispatchEvent(new PlayerEvent(data.method, data.params, this));
+        this.dispatchEvent(new PlayerEvent(message.getNamespacedMethod(), message.getParameters(), this));
 
-        if (data.method === 'response') {
-            this.handleResponse(data.params);
+        if (message.getMethod() === 'destroy' && message.getExtension() !== null) {
+            this.extensions.delete(message.getExtension());
+        }
+
+        if (message.getMethod() === 'response') {
+            this.handleResponse(message.getParameters());
         }
     }
 
@@ -327,5 +335,29 @@ export default class Player extends EventTarget {
     seekTime(time) {
         this.sendMethod('seekToTime', [time]);
         return this;
+    }
+
+    /**
+     * @param {string} extension
+     * @returns {Promise<void>}
+     */
+    async initExtension(extension) {
+        await this.callMethod(`${extension}:init`);
+        this.extensions.add(extension);
+    }
+
+    /**
+     * @param {number} rate
+     * @returns {Promise<number>}
+     */
+    async setPlaybackRate(rate) {
+        return await this.callMethod('playback-rate:setPlaybackRate', [rate]);
+    }
+
+    /**
+     * @returns {Promise<number>}
+     */
+    async getPlaybackRate() {
+        return await this.callMethod('playback-rate:getPlaybackRate');
     }
 }

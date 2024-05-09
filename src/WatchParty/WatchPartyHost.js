@@ -31,6 +31,7 @@ export default class WatchPartyHost extends EventTarget {
         this.player.addEventListener('seeked', this._publishUpdate);
         this.player.addEventListener('play', this._publishUpdate);
         this.player.addEventListener('pause', this._publishUpdate);
+        this.player.addEventListener('playback-rate:ratechange', this._publishUpdate);
     }
 
     /**
@@ -81,6 +82,7 @@ export default class WatchPartyHost extends EventTarget {
         this.player.removeEventListener('seeked', this._publishUpdate);
         this.player.removeEventListener('play', this._publishUpdate);
         this.player.removeEventListener('pause', this._publishUpdate);
+        this.player.removeEventListener('playback-rate:ratechange', this._publishUpdate);
     }
 
     /**
@@ -104,6 +106,7 @@ export default class WatchPartyHost extends EventTarget {
         status.url = window.location.href.split('#')[0].split('?')[0];
         status.time = await this.player.getCurrentTime();
         status.playing = await this.player.isPlaying();
+        status.speed = this.player.hasExtension('playback-rate') ? await this.player.getPlaybackRate() : 1;
         return status;
     }
 }

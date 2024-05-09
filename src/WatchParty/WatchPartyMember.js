@@ -31,6 +31,7 @@ export default class WatchPartyMember extends EventTarget {
         this.player.addEventListener('loadeddata', this._applyScheduledUpdate);
         this.player.addEventListener('play', this._applyStatus);
         this.player.addEventListener('pause', this._applyStatus);
+        this.player.addEventListener('playback-rate:ratechange', this._applyStatus);
     }
 
     async init() {
@@ -75,6 +76,7 @@ export default class WatchPartyMember extends EventTarget {
         this.player.removeEventListener('loadeddata', this._applyScheduledUpdate);
         this.player.removeEventListener('play', this._applyStatus);
         this.player.removeEventListener('pause', this._applyStatus);
+        this.player.removeEventListener('playback-rate:ratechange', this._applyStatus);
     }
 
     /**
@@ -118,6 +120,10 @@ export default class WatchPartyMember extends EventTarget {
             } else {
                 await this.player.pause();
             }
+        }
+
+        if (this.player.hasExtension('playback-rate')) {
+            await this.player.setPlaybackRate(lastStatus.speed);
         }
 
         let time = await this.player.getCurrentTime();

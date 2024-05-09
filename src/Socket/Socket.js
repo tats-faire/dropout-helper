@@ -1,6 +1,6 @@
 import {server} from "../constants.js";
 import Message from "./Message.js";
-import PendingRequest from "../Player/PendingRequest.js";
+import PendingRequest from "../PendingRequest.js";
 import EventTarget from "../Events/EventTarget.js";
 import SocketMessageEvent from "../Events/SocketMessageEvent.js";
 import SocketStatusEvent from "../Events/SocketStatusEvent.js";
