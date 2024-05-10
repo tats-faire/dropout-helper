@@ -344,6 +344,7 @@ export default class Player extends EventTarget {
     async initExtension(extension) {
         await this.callMethod(`${extension}:init`);
         this.extensions.add(extension);
+        this.dispatchEvent(new Event(`${extension}:init`));
     }
 
     /**

@@ -30,6 +30,15 @@ import WatchPartySection from "../src/UI/WatchPartySection.js";
         storage.set('muted', await player.isMuted());
     });
 
+    player.addEventListener('playback-rate:ratechange', async e => {
+        let rate = e.getData();
+        if (rate === storage.get('playbackRate')) {
+            return;
+        }
+
+        storage.set('playbackRate', rate);
+    });
+
     player.addEventListener('loadstart', async e => {
         player.initExtension('playback-rate').catch(e => console.error('Failed to init playback rate extension', e));
 
@@ -50,6 +59,13 @@ import WatchPartySection from "../src/UI/WatchPartySection.js";
             await watchPartySection.join(id);
         }
     });
+
+    // Set the playback rate as soon as the extension is initialized
+    player.addEventListener('playback-rate:init', () => {
+        if (storage.has('playbackRate')) {
+            player.setPlaybackRate(storage.get('playbackRate'));
+        }
+    })
 
     // There is no event for changing subtitles, so we have to poll for it
     setInterval(async () => {
