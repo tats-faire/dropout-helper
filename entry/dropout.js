@@ -2,6 +2,10 @@ import Storage from "../src/Storage.js";
 import Player from "../src/Player/Player.js";
 import WatchPartySection from "../src/UI/WatchPartySection.js";
 
+let seriesLink = document.querySelector('a.custom-nav-series');
+if (seriesLink) {
+    seriesLink.removeAttribute('target');
+}
 
 (async () => {
     let storage = new Storage('_dropout_helper');
