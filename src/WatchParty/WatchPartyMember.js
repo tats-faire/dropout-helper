@@ -1,11 +1,9 @@
 import Socket from "../Socket/Socket.js";
-import EventTarget from "../Events/EventTarget.js";
 import Event from "../Events/Event.js";
+import WatchPartyController from "./WatchPartyController.js";
 
-export default class WatchPartyMember extends EventTarget {
-    /** @type {string} */ id;
+export default class WatchPartyMember extends WatchPartyController {
     /** @type {import("../Socket/Socket.js").default} */ socket;
-    /** @type {Player} */ player;
     /** @type {?WatchPartyStatus} */ lastStatus = null;
     /** @type {boolean} */ scheduledUpdate = true;
     /** @type {boolean} */ isUpdating = false;
@@ -18,9 +16,7 @@ export default class WatchPartyMember extends EventTarget {
      * @param {Player} player
      */
     constructor(id, player) {
-        super();
-        this.id = id;
-        this.player = player;
+        super(id, player);
         this.socket = new Socket();
         this.socket.addEventListener('status', this.handleSocketStatus.bind(this));
         this.socket.addEventListener('reconnect', this.handleReconnect.bind(this));
@@ -35,6 +31,7 @@ export default class WatchPartyMember extends EventTarget {
     }
 
     async init() {
+        await super.init();
         await this.socket.connect();
         try {
             await this.socket.subscribe(this.id);
@@ -65,6 +62,7 @@ export default class WatchPartyMember extends EventTarget {
      * @returns {Promise<void>}
      */
     async destroy() {
+        await super.destroy();
         try {
             await this.socket.unsubscribe(this.id);
         } catch (e) {
@@ -130,7 +128,7 @@ export default class WatchPartyMember extends EventTarget {
         let targetTime = lastStatus.getTime() + (this.socket.getPing() / 1000 / 2);
         let diff = Math.abs(targetTime - time);
         let threshold = Math.min(0.5 * this.seekScore, 3);
-        if (Math.abs(diff) > threshold) {
+        if (diff > threshold) {
             this.seekScore++;
             await this.player.seekTime(targetTime + Math.min(this.player.getAverageSeekTime() / 1000, 4));
         } else {

@@ -61,6 +61,9 @@ if (seriesLink) {
         if (self.location.hash.startsWith('#dhparty-')) {
             let id = self.location.hash.slice(9);
             await watchPartySection.join(id);
+        } else if (self.location.hash.startsWith('#dhscheduled-')) {
+            let id = self.location.hash.slice(13);
+            await watchPartySection.joinScheduledSession(id);
         }
     });
 

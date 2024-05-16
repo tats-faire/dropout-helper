@@ -2,12 +2,11 @@ import Socket from "../Socket/Socket.js";
 import WatchPartyStatus from "./WatchPartyStatus.js";
 import EventTarget from "../Events/EventTarget.js";
 import Event from "../Events/Event.js";
+import WatchPartyController from "./WatchPartyController.js";
 
-export default class WatchPartyHost extends EventTarget {
-    /** @type {string} */ id;
+export default class WatchPartyHost extends WatchPartyController {
     /** @type {string} */ secret;
     /** @type {import("../Socket/Socket.js").default} */ socket;
-    /** @type {Player} */ player;
     /** @type {number} */ updateInterval;
     /** @type {?WatchPartyStatus} */ lastStatus = null;
     /** @type {Function} */ _publishUpdate;
@@ -18,10 +17,8 @@ export default class WatchPartyHost extends EventTarget {
      * @param {?string} secret
      */
     constructor(player, id = null, secret = null) {
-        super();
-        this.id = id;
+        super(id, player);
         this.secret = secret;
-        this.player = player;
         this.socket = new Socket();
 
         this.socket.addEventListener('status', this.handleSocketStatus.bind(this));
@@ -38,6 +35,7 @@ export default class WatchPartyHost extends EventTarget {
      * @returns {Promise<void>}
      */
     async init() {
+        await super.init();
         let status = await this.collectStatusInfo();
         await this.socket.connect();
         try {
@@ -76,6 +74,7 @@ export default class WatchPartyHost extends EventTarget {
      * @returns {Promise<void>}
      */
     async destroy() {
+        await super.destroy();
         clearInterval(this.updateInterval);
         this.socket.close();
 
