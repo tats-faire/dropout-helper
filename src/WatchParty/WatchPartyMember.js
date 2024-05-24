@@ -1,6 +1,7 @@
 import Socket from "../Socket/Socket.js";
 import Event from "../Events/Event.js";
 import WatchPartyController from "./WatchPartyController.js";
+import {VALID_HOSTS} from "../constants.js";
 
 export default class WatchPartyMember extends WatchPartyController {
     /** @type {import("../Socket/Socket.js").default} */ socket;
@@ -98,7 +99,9 @@ export default class WatchPartyMember extends WatchPartyController {
         this.isUpdating = true;
         let lastStatus = this.lastStatus;
         let url = new URL(lastStatus.url);
-        if (self.location.host !== url.host || self.location.pathname !== url.pathname) {
+        if (url.protocol === 'https:'
+            && VALID_HOSTS.includes(url.host)
+            && (self.location.host !== url.host || self.location.pathname !== url.pathname)) {
             await this.destroy();
             url.hash = '#dhparty-' + this.id;
             self.location = url.href;

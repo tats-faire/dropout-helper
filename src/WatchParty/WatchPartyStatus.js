@@ -2,6 +2,7 @@ export default class WatchPartyStatus {
     /** @type {?string} */ secret = null
     /** @type {string} */ id;
     /** @type {string} */ url;
+    /** @type {?string} */ title = null;
     /** @type {number} */ time = 0;
     /** @type {number} */ lastUpdate = Date.now();
     /** @type {number} */ createdAt = Date.now();
@@ -22,6 +23,7 @@ export default class WatchPartyStatus {
             secret: this.secret,
             id: this.id,
             url: this.url,
+            title: this.title,
             time: this.time,
             lastUpdate: this.lastUpdate,
             speed: this.speed,

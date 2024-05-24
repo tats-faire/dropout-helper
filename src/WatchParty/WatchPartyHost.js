@@ -6,6 +6,7 @@ import WatchPartyController from "./WatchPartyController.js";
 
 export default class WatchPartyHost extends WatchPartyController {
     /** @type {string} */ secret;
+    /** @type {?string} */ title = null;
     /** @type {import("../Socket/Socket.js").default} */ socket;
     /** @type {number} */ updateInterval;
     /** @type {?WatchPartyStatus} */ lastStatus = null;
@@ -13,12 +14,14 @@ export default class WatchPartyHost extends WatchPartyController {
 
     /**
      * @param {Player} player
+     * @param {?string} title
      * @param {?string} id
      * @param {?string} secret
      */
-    constructor(player, id = null, secret = null) {
+    constructor(player, title = null, id = null, secret = null) {
         super(id, player);
         this.secret = secret;
+        this.title = title;
         this.socket = new Socket();
 
         this.socket.addEventListener('status', this.handleSocketStatus.bind(this));
@@ -103,6 +106,7 @@ export default class WatchPartyHost extends WatchPartyController {
         status.id = this.id;
         status.secret = this.secret;
         status.url = window.location.href.split('#')[0].split('?')[0];
+        status.title = this.title;
         status.time = await this.player.getCurrentTime();
         status.playing = await this.player.isPlaying();
         status.speed = this.player.hasExtension('playback-rate') ? await this.player.getPlaybackRate() : 1;

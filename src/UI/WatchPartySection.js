@@ -15,14 +15,17 @@ export default class WatchPartySection {
     /** @type {HTMLButtonElement} */ becomeHostButton;
     /** @type {?WatchPartyController} */ controller = null;
     /** @type {?number} */ errorTimeout = null;
+    /** @type {?string} */ title;
 
     /**
      * @param {Player} player
      * @param {import("../Storage.js").default} storage
+     * @param {?string} title
      */
-    constructor(player, storage) {
+    constructor(player, storage, title) {
         this.player = player;
         this.storage = storage;
+        this.title = title;
         this.updateStoredSecrets();
         this.create();
         this.updateUI();
@@ -189,7 +192,7 @@ export default class WatchPartySection {
             return;
         }
 
-        this.controller = new WatchPartyHost(this.player, id, secret);
+        this.controller = new WatchPartyHost(this.player, this.title, id, secret);
         this.controller.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.controller.init();
@@ -272,7 +275,7 @@ export default class WatchPartySection {
             return;
         }
         this.busy = true;
-        this.controller = new WatchPartyHost(this.player);
+        this.controller = new WatchPartyHost(this.player, this.title);
         this.controller.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.controller.init();

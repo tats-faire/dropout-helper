@@ -1,4 +1,4 @@
-import {server} from "../constants.js";
+import {SERVER} from "../constants.js";
 import Message from "./Message.js";
 import PendingRequest from "../PendingRequest.js";
 import EventTarget from "../Events/EventTarget.js";
@@ -18,7 +18,7 @@ export default class Socket extends EventTarget {
      * @returns {Promise<this>}
      */
     async connect(reconnect = false) {
-        console.log('Connecting to DropoutHelper server', server);
+        console.log('Connecting to DropoutHelper server', SERVER);
         this.reconnect = true;
         while (this.reconnect) {
             try {
@@ -66,7 +66,7 @@ export default class Socket extends EventTarget {
      */
     createConnection() {
         return new Promise((resolve, reject) => {
-            let ws = new WebSocket(server);
+            let ws = new WebSocket(SERVER);
             let open = () => {
                 ws.removeEventListener('error', error);
                 ws.removeEventListener('open', open);

@@ -14,11 +14,20 @@ if (seriesLink) {
         return;
     }
 
+    let seriesTitleElement = document.querySelector('.series-title');
+    let videoTitleElement = document.querySelector('.video-title');
+    let title = null;
+    if (seriesTitleElement && videoTitleElement) {
+        title = `${seriesTitleElement.textContent.trim()}: ${videoTitleElement.textContent.trim()}`;
+    } else {
+        title = seriesTitleElement?.textContent.trim() ?? videoTitleElement?.textContent.trim() ?? null;
+    }
+
     let player = Player.get(iframe);
 
     let shareTools = document.querySelector('div.share-tools');
     let column = shareTools.parentElement;
-    let watchPartySection = new WatchPartySection(player, storage);
+    let watchPartySection = new WatchPartySection(player, storage, title);
     column.insertBefore(watchPartySection.getHtml(), shareTools);
 
     // The volumechange even is emitted whenever the volume is changed or the player is muted/unmuted
