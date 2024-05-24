@@ -15,9 +15,10 @@ export default class WatchPartyMember extends WatchPartyController {
     /**
      * @param {string} id
      * @param {Player} player
+     * @param {Storage} storage
      */
-    constructor(id, player) {
-        super(id, player);
+    constructor(id, player, storage) {
+        super(id, player, storage);
         this.socket = new Socket();
         this.socket.addEventListener('status', this.handleSocketStatus.bind(this));
         this.socket.addEventListener('reconnect', this.handleReconnect.bind(this));
@@ -48,6 +49,7 @@ export default class WatchPartyMember extends WatchPartyController {
      */
     async handleSocketStatus(event) {
         this.lastStatus = event.getStatus();
+        this.storage.storePreviousParty(this.id, null, this.lastStatus.title);
         await this.applyStatus();
         this.dispatchEvent(new Event('update'));
     }

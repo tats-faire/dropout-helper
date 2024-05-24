@@ -2,15 +2,16 @@ import WatchPartyHost from "../WatchParty/WatchPartyHost.js";
 import WatchPartyMember from "../WatchParty/WatchPartyMember.js";
 import ScheduledSession from "../WatchParty/ScheduledSession.js";
 import Tooltip from "./Tooltip.js";
+import PartyListEntry from "./PartyListEntry.js";
 
 export default class WatchPartySection {
     /** @type {Player} */ player;
-    /** @type {import("../Storage.js").default} */ storage;
+    /** @type {import("../Storage/Storage.js").default} */ storage;
     /** @type {boolean} */ busy = false;
     /** @type {HTMLElement} */ main;
     /** @type {HTMLElement} */ message;
     /** @type {HTMLElement} */ errorMessage;
-    /** @type {HTMLElement} */ previousParties;
+    /** @type {PartyListEntry[]} */ previousParties;
     /** @type {HTMLButtonElement} */ createButton;
     /** @type {HTMLButtonElement} */ leaveButton;
     /** @type {HTMLButtonElement} */ copyLinkButton;
@@ -22,14 +23,14 @@ export default class WatchPartySection {
 
     /**
      * @param {Player} player
-     * @param {import("../Storage.js").default} storage
+     * @param {import("../Storage/Storage.js").default} storage
      * @param {?string} title
      */
     constructor(player, storage, title) {
         this.player = player;
         this.storage = storage;
         this.title = title;
-        this.updateStoredSecrets();
+        this.storage.updatePreviousParties();
         this.create();
         this.updateUI();
     }
@@ -39,8 +40,14 @@ export default class WatchPartySection {
         this.createButton.style.display = inParty ? 'none' : '';
         this.leaveButton.style.display = inParty ? '' : 'none';
         this.copyLinkButton.style.display = inParty ? '' : 'none';
-        this.becomeHostButton.style.display = this.controller instanceof WatchPartyMember && this.controller.id && this.getStoredSecret(this.controller.id) ? '' : 'none';
+        this.becomeHostButton.style.display = this.controller instanceof WatchPartyMember && this.controller.id && this.storage.getPreviousPartySecret(this.controller.id) ? '' : 'none';
         this.updateMessage();
+
+        let i = 0;
+        for (let entry of this.previousParties) {
+            entry.setVisibility(entry.id !== this.controller?.id && i < 5);
+            i++;
+        }
     }
 
     create() {
@@ -90,9 +97,24 @@ export default class WatchPartySection {
         this.errorMessage.style.display = 'none';
         content.appendChild(this.errorMessage);
 
-        this.previousParties = document.createElement('div');
-        this.previousParties.classList.add('margin-top-medium', 'margin-bottom-small', 'margin-left-medium', 'margin-right-medium');
-        this.main.appendChild(this.previousParties);
+        let previousPartiesWrapper = document.createElement('div');
+        previousPartiesWrapper.classList.add('margin-top-medium', 'margin-bottom-small', 'margin-left-medium', 'margin-right-medium');
+        this.main.appendChild(previousPartiesWrapper);
+
+        let previousParties = this.storage.getPreviousParties()
+            .sort((a, b) => b.lastUpdate - a.lastUpdate);
+        this.previousParties = [];
+        for (let party of previousParties) {
+            let entry = new PartyListEntry(party.id, party.title, !!party.secret);
+            this.previousParties.push(entry);
+            entry.addEventListener('join', async () => {
+                await this.join(party.id);
+            });
+            entry.addEventListener('host', async () => {
+                await this.host(party.id, party.secret);
+            });
+            previousPartiesWrapper.appendChild(entry.getHtml());
+        }
     }
 
     updateMessage() {
@@ -150,7 +172,16 @@ export default class WatchPartySection {
         }
         this.busy = true;
 
-        this.controller = new WatchPartyMember(id, this.player);
+        try {
+            await this.leave();
+        } catch (e) {
+            console.error('Failed to leave watch party', e);
+            this.showError('Failed to join watch party: Failed to leave current watch party.');
+            this.busy = false;
+            return;
+        }
+
+        this.controller = new WatchPartyMember(id, this.player, this.storage);
         this.controller.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.controller.init();
@@ -159,17 +190,23 @@ export default class WatchPartySection {
             this.showError('Failed to join watch party. The party may no longer exist or your link may be invalid.');
             this.controller = null;
         }
+
+        this.updateUrl();
         this.updateUI();
         this.busy = false;
     }
 
+    /**
+     * @param {string} id
+     * @returns {Promise<void>}
+     */
     async joinScheduledSession(id) {
         if (this.busy) {
             return;
         }
         this.busy = true;
 
-        this.controller = new ScheduledSession(id, this.player);
+        this.controller = new ScheduledSession(id, this.player, this.storage);
         this.controller.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.controller.init();
@@ -178,18 +215,69 @@ export default class WatchPartySection {
             this.showError('Failed to join scheduled session. Your link may be invalid.');
             this.controller = null;
         }
+        this.updateUrl();
         this.updateUI();
         this.busy = false;
     }
 
-    async handleBecomeHost() {
-        if (this.busy || !this.controller?.id) {
+    /**
+     * @returns {Promise<this>}
+     */
+    async leave() {
+        if (!this.controller) {
+            return this;
+        }
+
+        await this.controller.destroy();
+        this.controller = null;
+        return this;
+    }
+
+    /**
+     * @param {string} id
+     * @param {string} secret
+     * @returns {Promise<void>}
+     */
+    async host(id, secret) {
+        if (this.busy) {
             return;
         }
         this.busy = true;
 
+        try {
+            await this.leave();
+        } catch (e) {
+            console.error('Failed to leave watch party', e);
+            this.showError('Failed to start hosting watch party: Failed to leave current watch party.');
+            this.busy = false;
+            return;
+        }
+
+        this.controller = new WatchPartyHost(this.player, this.storage, this.title, id, secret);
+        this.controller.addEventListener('update', this.updateUI.bind(this));
+        try {
+            await this.controller.init();
+        } catch (e) {
+            console.error('Failed to start hosting watch party', e);
+            this.showError('Failed to start hosting watch party. The party may no longer exist or your link may be invalid.');
+            this.controller = null;
+        }
+
+        this.busy = false;
+        this.updateUrl();
+        this.updateUI();
+    }
+
+    /**
+     * @returns {Promise<void>}
+     */
+    async handleBecomeHost() {
+        if (!this.controller?.id) {
+            return;
+        }
+
         let id = this.controller.id;
-        let secret = this.getStoredSecret(id);
+        let secret = this.storage.getPreviousPartySecret(id);
 
         if (!secret) {
             this.showError('Failed to resume hosting watch party. The party may no longer exist or your link may be invalid.');
@@ -197,75 +285,7 @@ export default class WatchPartySection {
             return;
         }
 
-        try {
-            await this.controller.destroy();
-            this.controller = null;
-        } catch (e) {
-            console.error('Failed to leave watch party', e);
-            this.showError('Failed to resume hosting watch party: Failed to leave watch party.');
-            this.busy = false;
-            return;
-        }
-
-        this.controller = new WatchPartyHost(this.player, this.title, id, secret);
-        this.controller.addEventListener('update', this.updateUI.bind(this));
-        try {
-            await this.controller.init();
-        } catch (e) {
-            console.error('Failed to resume hosting watch party', e);
-            this.showError('Failed to resume hosting watch party. The party may no longer exist or your link may be invalid.');
-            this.controller = null;
-        }
-
-        this.busy = false;
-        this.updateUI();
-    }
-
-    /**
-     * @returns {this}
-     */
-    updateStoredSecrets() {
-        let secrets = this.storage.get('watchPartySecrets') ?? {};
-        for (let id of Object.keys(secrets)) {
-            let secret = secrets[id];
-            if (typeof secret !== 'object') {
-                delete secrets[id];
-            }
-            if (typeof secret.expires !== 'number' || secret.expires < Date.now()) {
-                delete secrets[id];
-            }
-            if (typeof secret.secret !== 'string') {
-                delete secrets[id];
-            }
-        }
-        this.storage.set('watchPartySecrets', secrets);
-        return this;
-    }
-
-    /**
-     * @param {string} id
-     * @returns {string|null}
-     */
-    getStoredSecret(id) {
-        let secrets = this.storage.get('watchPartySecrets');
-        if (!secrets) {
-            return null;
-        }
-        return secrets[id]?.secret ?? null;
-    }
-
-    /**
-     * @param {string} id
-     * @param {string} secret
-     * @returns {this}
-     */
-    storeSecret(id, secret) {
-        let secrets = this.storage.get('watchPartySecrets') ?? {};
-        secrets[id] = {
-            secret, expires: Date.now() + 1000 * 60 * 60 * 24 * 7
-        };
-        this.storage.set('watchPartySecrets', secrets);
-        return this;
+        await this.host(id, secret);
     }
 
     /**
@@ -294,12 +314,11 @@ export default class WatchPartySection {
             return;
         }
         this.busy = true;
-        this.controller = new WatchPartyHost(this.player, this.title);
+        this.controller = new WatchPartyHost(this.player, this.storage, this.title);
         this.controller.addEventListener('update', this.updateUI.bind(this));
         try {
             await this.controller.init();
-            self.location.hash = '#dhparty-' + this.controller.id;
-            this.storeSecret(this.controller.id, this.controller.secret);
+            this.updateUrl();
         } catch (e) {
             console.error('Failed to create watch party', e);
             this.showError('Failed to create watch party');
@@ -307,6 +326,25 @@ export default class WatchPartySection {
         }
         this.updateUI();
         this.busy = false;
+    }
+
+    /**
+     * @returns {string}
+     */
+    getUrlHash() {
+        if (!this.controller) {
+            return '';
+        }
+
+        if (this.controller instanceof ScheduledSession) {
+            return '#dhscheduled-' + this.controller.id;
+        }
+
+        return '#dhparty-' + this.controller.id;
+    }
+
+    updateUrl() {
+        self.location.hash = this.getUrlHash();
     }
 
     /**
@@ -324,9 +362,7 @@ export default class WatchPartySection {
             console.error('Failed to leave watch party', e);
             this.showError('Failed to leave watch party');
         }
-        if (self.location.hash.startsWith('#dh')) {
-            self.location.hash = '';
-        }
+        this.updateUrl();
         this.updateUI();
         this.busy = false;
     }
@@ -335,18 +371,9 @@ export default class WatchPartySection {
      * @returns {Promise<void>}
      */
     async handleCopyLinkButton() {
-        let id = this.controller?.id;
-        if (!id) {
-            this.showError('Failed to copy link. You are not currently in a watch party.');
-        }
-
         let url = new URL(window.location.href);
-        let prefix = '#dhparty-';
-        if (this.controller instanceof ScheduledSession) {
-            prefix = '#dhscheduled-';
-        }
+        url.hash = this.getUrlHash();
 
-        url.hash = prefix + id;
         await navigator.clipboard.writeText(url.href);
         this.copyLinkTooltip.setText('Copied!');
         setTimeout(() => {

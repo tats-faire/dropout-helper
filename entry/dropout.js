@@ -1,4 +1,4 @@
-import Storage from "../src/Storage.js";
+import Storage from "../src/Storage/Storage.js";
 import Player from "../src/Player/Player.js";
 import WatchPartySection from "../src/UI/WatchPartySection.js";
 

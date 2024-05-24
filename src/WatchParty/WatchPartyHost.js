@@ -1,6 +1,5 @@
 import Socket from "../Socket/Socket.js";
 import WatchPartyStatus from "./WatchPartyStatus.js";
-import EventTarget from "../Events/EventTarget.js";
 import Event from "../Events/Event.js";
 import WatchPartyController from "./WatchPartyController.js";
 
@@ -14,12 +13,13 @@ export default class WatchPartyHost extends WatchPartyController {
 
     /**
      * @param {Player} player
+     * @param {Storage} storage
      * @param {?string} title
      * @param {?string} id
      * @param {?string} secret
      */
-    constructor(player, title = null, id = null, secret = null) {
-        super(id, player);
+    constructor(player, storage,  title = null, id = null, secret = null) {
+        super(id, player, storage);
         this.secret = secret;
         this.title = title;
         this.socket = new Socket();
@@ -63,6 +63,7 @@ export default class WatchPartyHost extends WatchPartyController {
      */
     async handleSocketStatus(event) {
         this.lastStatus = event.getStatus();
+        this.storage.storePreviousParty(this.id, this.secret, this.title);
         this.dispatchEvent(new Event('update'));
     }
 

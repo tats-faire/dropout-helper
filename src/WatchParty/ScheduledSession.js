@@ -12,9 +12,10 @@ export default class ScheduledSession extends WatchPartyController {
     /**
      * @param {string} id
      * @param {Player} player
+     * @param {Storage} storage
      */
-    constructor(id, player) {
-        super(id, player);
+    constructor(id, player, storage) {
+        super(id, player, storage);
         this._updatePlayer = this.updatePlayer.bind(this);
 
         this.player.addEventListener('seeked', this._updatePlayer);
