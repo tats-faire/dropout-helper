@@ -1,6 +1,7 @@
 import WatchPartyHost from "../WatchParty/WatchPartyHost.js";
 import WatchPartyMember from "../WatchParty/WatchPartyMember.js";
 import ScheduledSession from "../WatchParty/ScheduledSession.js";
+import Tooltip from "./Tooltip.js";
 
 export default class WatchPartySection {
     /** @type {Player} */ player;
@@ -9,10 +10,12 @@ export default class WatchPartySection {
     /** @type {HTMLElement} */ main;
     /** @type {HTMLElement} */ message;
     /** @type {HTMLElement} */ errorMessage;
+    /** @type {HTMLElement} */ previousParties;
     /** @type {HTMLButtonElement} */ createButton;
     /** @type {HTMLButtonElement} */ leaveButton;
     /** @type {HTMLButtonElement} */ copyLinkButton;
     /** @type {HTMLButtonElement} */ becomeHostButton;
+    /** @type {Tooltip} */ copyLinkTooltip;
     /** @type {?WatchPartyController} */ controller = null;
     /** @type {?number} */ errorTimeout = null;
     /** @type {?string} */ title;
@@ -58,26 +61,38 @@ export default class WatchPartySection {
         this.message.textContent = '';
         content.appendChild(this.message);
 
-        this.createButton = this.createButtonElement('Create Watch Party', this.handleCreateButton.bind(this));
+        let tooltip = new Tooltip('Create a watch party');
+        this.createButton = this.createButtonElement('Create', this.handleCreateButton.bind(this), tooltip);
         content.appendChild(this.createButton);
+        content.appendChild(tooltip.getHtml());
 
-        this.leaveButton = this.createButtonElement('Leave Watch Party', this.handleLeaveButton.bind(this));
+        tooltip = new Tooltip('Leave watch party');
+        this.leaveButton = this.createButtonElement('Leave', this.handleLeaveButton.bind(this), tooltip);
         this.leaveButton.style.display = 'none';
         content.appendChild(this.leaveButton);
+        content.appendChild(tooltip.getHtml());
 
-        this.copyLinkButton = this.createButtonElement('Copy Link', this.handleCopyLinkButton.bind(this));
+        this.copyLinkTooltip = new Tooltip('Copy link');
+        this.copyLinkButton = this.createButtonElement('Copy Link', this.handleCopyLinkButton.bind(this), this.copyLinkTooltip);
         this.copyLinkButton.style.display = 'none';
         content.appendChild(this.copyLinkButton);
+        content.appendChild(this.copyLinkTooltip.getHtml());
 
-        this.becomeHostButton = this.createButtonElement('Resume Hosting', this.handleBecomeHost.bind(this));
+        tooltip = new Tooltip('Resume controlling this watch party');
+        this.becomeHostButton = this.createButtonElement('Resume Hosting', this.handleBecomeHost.bind(this), tooltip);
         this.becomeHostButton.style.display = 'none';
         content.appendChild(this.becomeHostButton);
+        content.appendChild(tooltip.getHtml());
 
         this.errorMessage = document.createElement('p');
         this.errorMessage.textContent = '';
         this.errorMessage.style.color = '#D3104AFF';
         this.errorMessage.style.display = 'none';
         content.appendChild(this.errorMessage);
+
+        this.previousParties = document.createElement('div');
+        this.previousParties.classList.add('margin-top-medium', 'margin-bottom-small', 'margin-left-medium', 'margin-right-medium');
+        this.main.appendChild(this.previousParties);
     }
 
     updateMessage() {
@@ -256,14 +271,18 @@ export default class WatchPartySection {
     /**
      * @param {string} label
      * @param {Function} listener
+     * @param {?Tooltip} tooltip
      * @returns {HTMLButtonElement}
      */
-    createButtonElement(label, listener) {
+    createButtonElement(label, listener, tooltip = null) {
         let button = document.createElement('button');
-        button.classList.add('btn', 'btn-transparent', 'custom-btn-action-my-list', 'margin-bottom-small', 'margin-right-small');
+        button.classList.add('btn', 'btn-transparent', 'margin-bottom-small', 'margin-right-small');
         button.textContent = label;
-        button.title = label;
+        button.title = tooltip?.getText() ?? label;
         button.addEventListener('click', listener);
+        if (tooltip) {
+            button.dataset.tooltip = tooltip.getTooltipData();
+        }
         return button;
     }
 
@@ -329,9 +348,9 @@ export default class WatchPartySection {
 
         url.hash = prefix + id;
         await navigator.clipboard.writeText(url.href);
-        this.copyLinkButton.textContent = 'Copied!';
+        this.copyLinkTooltip.setText('Copied!');
         setTimeout(() => {
-            this.copyLinkButton.textContent = 'Copy Link';
+            this.copyLinkTooltip.setText('Copy link');
         }, 1000);
     }
 
