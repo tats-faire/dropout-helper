@@ -67,6 +67,9 @@ if (seriesLink) {
             await player.setSubtitle(storage.get('subtitles'));
         }
 
+        // Only start watching settings after the player has loaded
+        startWatchingSettings();
+
         if (self.location.hash.startsWith('#dhparty-')) {
             let id = self.location.hash.slice(9);
             await watchPartySection.join(id);
@@ -76,22 +79,24 @@ if (seriesLink) {
         }
     });
 
-    // Set the playback rate as soon as the extension is initialized
-    player.addEventListener('playback-rate:init', () => {
-        if (storage.has('playbackRate')) {
-            player.setPlaybackRate(storage.get('playbackRate'));
-        }
-    })
+    function startWatchingSettings() {
+        // Set the playback rate as soon as the extension is initialized
+        player.addEventListener('playback-rate:init', () => {
+            if (storage.has('playbackRate')) {
+                player.setPlaybackRate(storage.get('playbackRate'));
+            }
+        })
 
-    // There is no event for changing subtitles, so we have to poll for it
-    setInterval(async () => {
-        let captions = await player.getSubtitles();
-        let active = captions.find(caption => caption.mode === 'showing');
-        let id = active ? active.language : null;
-        if (storage.get('subtitles') === id) {
-            return;
-        }
-        storage.set('subtitles', id);
-    }, 1000);
+        // There is no event for changing subtitles, so we have to poll for it
+        setInterval(async () => {
+            let captions = await player.getSubtitles();
+            let active = captions.find(caption => caption.mode === 'showing');
+            let id = active ? active.language : null;
+            if (storage.get('subtitles') === id) {
+                return;
+            }
+            storage.set('subtitles', id);
+        }, 1000);
+    }
 })();
 
