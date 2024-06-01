@@ -2,7 +2,7 @@
   "manifest_version": 3,
   "name": "Dropout Helper",
   "description": "Dropout but it saves your volume and subtitle settings. It also adds Watch Parties.",
-  "version": "1.5.1",
+  "version": "1.6.0",
   "action": {
     "default_icon": "icons/dropout.png",
     "default_popup": "popup/popup.html"
@@ -17,15 +17,34 @@
   ],
   "content_scripts": [
     {
-      "matches": ["https://www.dropout.tv/*"],
-      "js": ["js/dropout.js"],
+      "matches": [
+        "https://www.dropout.tv/*"
+      ],
+      "js": [
+        "js/dropout.js"
+      ],
       "run_at": "document_end"
     },
     {
-      "matches": ["https://embed.vhx.tv/videos/*"],
+      "matches": [
+        "https://embed.vhx.tv/videos/*"
+      ],
       "all_frames": true,
-      "js": ["js/vhx-embed.js"],
-      "run_at": "document_end"
+      "js": [
+        "js/vhx-embed.js"
+      ],
+      "run_at": "document_end",
+      "world": "MAIN"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "js/vhx-embed.js"
+      ],
+      "matches": [
+        "https://embed.vhx.tv/*"
+      ]
     }
   ],
   "browser_specific_settings": {
@@ -33,5 +52,4 @@
       "id": "dropout-helper@kurtthiemann.com"
     }
   }
-
 }

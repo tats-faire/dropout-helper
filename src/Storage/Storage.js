@@ -38,6 +38,15 @@ export default class Storage {
     }
 
     /**
+     * @param {string} key
+     * @returns {this}
+     */
+    delete(key) {
+        localStorage.removeItem(this.name + '_' + key);
+        return this;
+    }
+
+    /**
      * @returns {this}
      */
     updatePreviousParties() {
