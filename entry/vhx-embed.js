@@ -17,11 +17,11 @@ import cookie from 'cookie';
 
     const parent = window.parent;
 
-    if (!parent) {
-        throw new Error('No parent window found');
+    if (parent) {
+        new PlaybackRateExtension(window, parent, origin);
+    } else {
+        console.error('No parent window found');
     }
-
-    new PlaybackRateExtension(window, parent, origin);
 
     // Fix player settings storage
     // Vimeo stores players settings, such as volume and subtitle settings, in a cookie.
