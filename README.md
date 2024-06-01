@@ -7,10 +7,6 @@ Vimeo OTT player API because the official one isn't great.
 In theory, this addon could be extended to work on any Vimeo OTT platform, 
 but nobody else really uses Vimeo OTT, so I'm not going to bother.
 
-Currently, this addon saves which subtitles are enabled, but not any of the fancy style options. 
-This is because the Vimeo OTT API doesn't provide a way to get or set the style options. 
-I might look into a way of doing this in the future.
-
 ## Installation
 
 Chrome: https://chromewebstore.google.com/detail/dropouthelper/jpdeijennnlahlhcoihhenodnolgdapl
