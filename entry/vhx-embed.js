@@ -95,7 +95,9 @@ import Storage from "../src/Storage/Storage.js";
         }
 
         settings.request.cookie.volume = options.get('volume') ?? 1;
-        settings.request.cookie.captions = options.get('captions') ?? null;
+
+        let captions = options.get('captions') ?? null;
+        settings.request.cookie.captions = captions ? captions.split('.')[0] : null;
 
         if (typeof settings.request.cookie.captions_styles !== "object") {
             settings.request.cookie.captions_styles = {};
