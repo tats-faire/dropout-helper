@@ -95,7 +95,7 @@ export default class WatchPartyHost extends WatchPartyController {
         try {
             await this.socket.update(await this.collectStatusInfo());
         } catch (e) {
-            console.error('Failed to publish update', e);
+            this.logger.error('Failed to publish update', e);
         }
     }
 

@@ -3,6 +3,7 @@ import WatchPartyMember from "../WatchParty/WatchPartyMember.js";
 import ScheduledSession from "../WatchParty/ScheduledSession.js";
 import Tooltip from "./Tooltip.js";
 import PartyListEntry from "./PartyListEntry.js";
+import Logger from "../Logger.js";
 
 export default class WatchPartySection {
     /** @type {Player} */ player;
@@ -20,6 +21,7 @@ export default class WatchPartySection {
     /** @type {?WatchPartyController} */ controller = null;
     /** @type {?number} */ errorTimeout = null;
     /** @type {?string} */ title;
+    /** @type {Logger} */ logger = new Logger('WatchParty');
 
     /**
      * @param {Player} player
@@ -175,7 +177,7 @@ export default class WatchPartySection {
         try {
             await this.leave();
         } catch (e) {
-            console.error('Failed to leave watch party', e);
+            this.logger.error('Failed to leave watch party', e);
             this.showError('Failed to join watch party: Failed to leave current watch party.');
             this.busy = false;
             return;
@@ -186,7 +188,7 @@ export default class WatchPartySection {
         try {
             await this.controller.init();
         } catch (e) {
-            console.error('Failed to join watch party', e);
+            this.logger.error('Failed to join watch party', e);
             this.showError('Failed to join watch party. The party may no longer exist or your link may be invalid.');
             this.controller = null;
         }
@@ -211,7 +213,7 @@ export default class WatchPartySection {
         try {
             await this.controller.init();
         } catch (e) {
-            console.error('Failed to join scheduled session', e);
+            this.logger.error('Failed to join scheduled session', e);
             this.showError('Failed to join scheduled session. Your link may be invalid.');
             this.controller = null;
         }
@@ -247,7 +249,7 @@ export default class WatchPartySection {
         try {
             await this.leave();
         } catch (e) {
-            console.error('Failed to leave watch party', e);
+            this.logger.error('Failed to leave watch party', e);
             this.showError('Failed to start hosting watch party: Failed to leave current watch party.');
             this.busy = false;
             return;
@@ -258,7 +260,7 @@ export default class WatchPartySection {
         try {
             await this.controller.init();
         } catch (e) {
-            console.error('Failed to start hosting watch party', e);
+            this.logger.error('Failed to start hosting watch party', e);
             this.showError('Failed to start hosting watch party. The party may no longer exist or your link may be invalid.');
             this.controller = null;
         }
@@ -320,7 +322,7 @@ export default class WatchPartySection {
             await this.controller.init();
             this.updateUrl();
         } catch (e) {
-            console.error('Failed to create watch party', e);
+            this.logger.error('Failed to create watch party', e);
             this.showError('Failed to create watch party');
             this.controller = null;
         }
@@ -359,7 +361,7 @@ export default class WatchPartySection {
             await this.controller?.destroy();
             this.controller = null;
         } catch (e) {
-            console.error('Failed to leave watch party', e);
+            this.logger.error('Failed to leave watch party', e);
             this.showError('Failed to leave watch party');
         }
         this.updateUrl();

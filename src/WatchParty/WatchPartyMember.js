@@ -69,7 +69,7 @@ export default class WatchPartyMember extends WatchPartyController {
         try {
             await this.socket.unsubscribe(this.id);
         } catch (e) {
-            console.error('Failed to unsubscribe from watch party', e);
+            this.logger.error('Failed to unsubscribe from watch party', e);
         }
         this.socket.close();
 

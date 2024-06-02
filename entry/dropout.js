@@ -1,11 +1,15 @@
 import Storage from "../src/Storage/Storage.js";
 import Player from "../src/Player/Player.js";
 import WatchPartySection from "../src/UI/WatchPartySection.js";
+import Logger from "../src/Logger.js";
 
 let seriesLink = document.querySelector('a.custom-nav-series');
 if (seriesLink) {
     seriesLink.removeAttribute('target');
 }
+
+let logger = new Logger('Dropout');
+logger.debug('Content script running.');
 
 (async () => {
     let storage = new Storage('_dropout_helper');
@@ -46,19 +50,22 @@ if (seriesLink) {
                 player.setPlaybackRate(storage.get('playbackRate'));
             }
         });
-        player.initExtension('playback-rate').catch(e => console.error('Failed to init playback rate extension', e));
+        player.initExtension('playback-rate').catch(e => logger.error('Failed to init playback rate extension', e));
 
         if (storage.has('volume')) {
+            logger.debug('Setting volume', storage.get('volume'));
             player.setVolume(storage.get('volume'));
             storage.delete('volume');
         }
 
         if (storage.has('muted')) {
+            logger.debug('Setting muted', storage.get('muted'));
             await player.setMuted(storage.get('muted'));
             storage.delete('muted');
         }
 
         if (storage.has('subtitles')) {
+            logger.debug('Setting subtitles', storage.get('subtitles'));
             await player.setSubtitle(storage.get('subtitles'));
             storage.delete('subtitles');
         }
