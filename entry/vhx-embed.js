@@ -1,5 +1,4 @@
 import PlaybackRateExtension from "../src/Player/Extension/PlaybackRateExtension.js";
-import cookie from 'cookie';
 import Logger from "../src/Logger.js";
 import Storage from "../src/Storage/Storage.js";
 
@@ -34,46 +33,87 @@ import Storage from "../src/Storage/Storage.js";
     // Vimeo stores players settings, such as volume and subtitle settings, in a cookie.
     // It does, however, try to save this cookie for the domain '.vimeo.com', which does
     // not work, since the OTT player is hosted on a different domain.
-    // This fix will
-    // - Change the configured cookie domain
-    // - Insert the player settings from the cookie in the initial settings API response,
-    //   since the API is hosted on vimeo.com, and therefore doesn't have access to the cookie.
+    // It does, however, also set all properties in the original settings object from the API,
+    // so we can use a Proxy to intercept changes to the cookie object and save them in the local storage
     let origJson = Response.prototype.json;
 
-    Response.prototype.json = async function() {
+    Response.prototype.json = async function () {
         let res = await origJson.apply(this);
-        return patchSettings(res);
+        let settings;
+        try {
+            settings = handleSettingsObject(res);
+        } catch (e) {
+            logger.error('Failed to handle settings object', e);
+        }
+        if (!settings) {
+            return res;
+        }
+        return settings;
     };
 
-    // Catch cookie changes and save player settings to local storage
-    let cookieDesc = Object.getOwnPropertyDescriptor(Document.prototype, 'cookie');
-    Object.defineProperty(Document.prototype, 'cookie', {
-        get: function() {
-            return cookieDesc.get.apply(this);
-        },
-        set(v) {
-            try {
-                let parsed = cookie.parse(v);
-                if (parsed.player) {
-                    logger.debug('Saving player settings to storage', parsed.player);
-                    storage.set('player', parsed.player);
-                }
-            } catch (e) {
-                logger.error('Failed to parse player cookie', e);
-            }
-            try {
-                return cookieDesc.set.apply(this, [v]);
-            } catch (e) {
-                logger.error('Failed to set cookie', e);
-            }
-        }
-    });
-
-    function patchSettings(settings) {
+    /**
+     * Check if a JSON response is the Vimeo settings object, apply saved settings,
+     * and add a Proxy object to save changes to the cookie object in the local storage
+     *
+     * @param {Object} settings
+     * @returns {?Object}
+     */
+    function handleSettingsObject(settings) {
         if (typeof settings !== "object" || !settings.vimeo_api_url || typeof settings.request !== "object") {
-            return settings;
+            return null;
         }
 
+        if (typeof settings.request.cookie !== "object") {
+            settings.request.cookie = {};
+        }
+
+        let playerSettings = getSettings();
+
+        let cookieObject = settings.request.cookie;
+        if (playerSettings) {
+            Object.assign(cookieObject, playerSettings);
+        }
+
+        settings.request.cookie = new Proxy(cookieObject, {
+            set(target, prop, value) {
+                target[prop] = value;
+
+                let settings = storage.get('playerSettings') ?? {};
+                settings[prop] = value;
+                storage.set('playerSettings', settings);
+                logger.log('Updated player settings', settings);
+                return true;
+            }
+        });
+
+        logger.debug('Patched initial player settings', playerSettings);
+
+        return settings;
+    }
+
+    /**
+     * Get saved player settings from the local storage
+     *
+     * @returns {?Object}
+     */
+    function getSettings() {
+        let settings = storage.get('playerSettings');
+        if (!settings) {
+            try {
+                return getLegacySettings();
+            } catch (e) {
+                return null;
+            }
+        }
+        return convertSavedSettings(settings);
+    }
+
+    /**
+     * Get saved player settings from a previous version of the extension
+     *
+     * @returns {?Object}
+     */
+    function getLegacySettings() {
         let options;
         try {
             let playerCookie = storage.get('player');
@@ -81,40 +121,43 @@ import Storage from "../src/Storage/Storage.js";
                 options = new URLSearchParams(playerCookie);
             }
         } catch (e) {
-            logger.error('Failed to parse player cookie', e);
-            return settings;
+            return null;
         }
 
         if (!options) {
-            return settings;
+            return null;
         }
 
-        settings.request.cookie_domain = self.location.hostname;
-        if (typeof settings.request.cookie !== "object") {
-            settings.request.cookie = {};
+        let entries = {};
+        for (let [key, value] of options.entries()) {
+            entries[key] = value;
         }
 
-        settings.request.cookie.volume = options.get('volume') ?? 1;
+        return convertSavedSettings(entries);
+    }
 
-        let captions = options.get('captions') ?? null;
-        settings.request.cookie.captions = captions ? captions.split('.')[0] : null;
-
-        if (typeof settings.request.cookie.captions_styles !== "object") {
-            settings.request.cookie.captions_styles = {};
-        }
-        settings.request.cookie.captions_styles.color = options.get('captions_color') ?? null;
-        settings.request.cookie.captions_styles.fontSize = options.get('captions_font_size') ?? null;
-        settings.request.cookie.captions_styles.fontFamily = options.get('captions_font_family') ?? null;
-        settings.request.cookie.captions_styles.fontOpacity = options.get('captions_font_opacity') ?? null;
-        settings.request.cookie.captions_styles.bgOpacity = options.get('captions_bg_opacity') ?? null;
-        settings.request.cookie.captions_styles.windowColor = options.get('captions_window_color') ?? null;
-        settings.request.cookie.captions_styles.windowOpacity = options.get('captions_window_opacity') ?? null;
-        settings.request.cookie.captions_styles.bgColor = options.get('captions_bg_color') ?? null;
-        settings.request.cookie.captions_styles.edgeStyle = options.get('captions_edge') ?? null;
-
-        logger.debug('Patched initial player settings', settings);
-
-        return settings;
+    /**
+     * Convert saved settings to the format used in Vimeo settings responses
+     *
+     * @param {Object} cookie
+     * @returns {Object}
+     */
+    function convertSavedSettings(cookie) {
+        return {
+            volume: cookie.volume ?? 1,
+            captions: cookie.captions ? cookie.captions.split('.')[0] : null,
+            captions_styles: {
+                color: cookie.captions_color ?? null,
+                fontSize: cookie.captions_font_size ?? null,
+                fontFamily: cookie.captions_font_family ?? null,
+                fontOpacity: cookie.captions_font_opacity ?? null,
+                bgOpacity: cookie.captions_bg_opacity ?? null,
+                windowColor: cookie.captions_window_color ?? null,
+                windowOpacity: cookie.captions_window_opacity ?? null,
+                bgColor: cookie.captions_bg_color ?? null,
+                edgeStyle: cookie.captions_edge ?? null
+            }
+        };
     }
 })();
 
