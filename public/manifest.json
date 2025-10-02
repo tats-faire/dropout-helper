@@ -13,12 +13,14 @@
   },
   "host_permissions": [
     "https://www.dropout.tv/*",
+    "https://watch.dropout.tv/*",
     "https://embed.vhx.tv/videos/*"
   ],
   "content_scripts": [
     {
       "matches": [
-        "https://www.dropout.tv/*"
+        "https://www.dropout.tv/*",
+        "https://watch.dropout.tv/*"
       ],
       "js": [
         "js/dropout.js"

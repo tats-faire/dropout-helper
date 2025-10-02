@@ -13,7 +13,7 @@ const statusMissingPermission = document.querySelector('.status-missing-permissi
 
 statusMissingPermission.addEventListener('click', requestPermissions);
 
-const requiredPermissions = {origins: ["https://www.dropout.tv/*", "https://embed.vhx.tv/videos/*"]};
+const requiredPermissions = {origins: ["https://www.dropout.tv/*", "https://watch.dropout.tv/*", "https://embed.vhx.tv/videos/*"]};
 
 async function update() {
     if (env === null) {
