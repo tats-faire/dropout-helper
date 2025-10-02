@@ -15,10 +15,10 @@
   "license": "MIT",
   "devDependencies": {
     "@types/chrome": "^0.0.266",
-    "esbuild": "^0.20.2",
+    "esbuild": "^0.25.10",
     "web-ext": "^8.0.0"
   },
   "dependencies": {
-    "cookie": "^0.6.0"
+    "cookie": "^1.0.2"
   }
 }
