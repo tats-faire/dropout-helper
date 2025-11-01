@@ -27,9 +27,9 @@ Firefox: https://addons.mozilla.org/en-US/firefox/addon/dropouthelper/
 2. Set your volume and subtitles
 3. Done
 
-In Firefox based browsers, an additional step is necessary to allow for unmuted autoplay:
+If you are using Firefox and you want the videos to start automatically again, you need to give Dropout permission to do so:
 
-<img width="919" height="39" alt="Image" src="https://github.com/user-attachments/assets/3f99636d-64b3-444c-93dd-31515dfbc831" />
+<img width="924" height="42" alt="Image" src='./docs/assets/permissions-panel.png' />
 
 Click on this button and then select "Allow Audio and Video". This adds an exception which allows Dropout to autoplay videos with sound.
 

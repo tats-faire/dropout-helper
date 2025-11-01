@@ -78,8 +78,6 @@ logger.debug('Content script running.');
         });
         player.initExtension('playback-rate').catch(e => logger.error('Failed to init playback rate extension', e));
 
-        document.querySelector('.vp-video video').autoplay = true;
-
         if (storage.has('volume')) {
             logger.debug('Setting volume', storage.get('volume'));
             player.setVolume(storage.get('volume'));
